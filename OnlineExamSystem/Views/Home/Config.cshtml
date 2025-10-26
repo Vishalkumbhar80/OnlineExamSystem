@@ -1,0 +1,103 @@
+﻿@{
+    ViewData["Title"] = "Exam Configurations";
+}
+
+<!-- Create Exam Button -->
+<a asp-controller="Home" asp-action="CreateExam" class="btn btn-primary mb-3">Create Exam</a>
+
+<!-- Table -->
+<table class="table table-bordered table-striped" id="examTable">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Title</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Duration</th>
+            <th>Total Questions</th>
+            <th>Total Marks</th>
+            <th>Passing Marks</th>
+            <th>Negative Marking</th>
+            <th>Instructions</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Rows will be populated via AJAX -->
+    </tbody>
+</table>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        getData();
+
+        $(document).on('click', '.delete-exam', function(e) {
+        e.preventDefault();
+
+        var id = $(this).data('id');
+        if (!id) return;
+
+        if (!confirm("Are you sure you want to delete this exam?")) return
+
+        $.ajax({
+            url: '@Url.Action("DeleteExam", "Home")', // posts to /Home/DeleteExam
+            type: 'POST',
+            data: { id: id }, // form-encoded body
+            success: function(result) {
+                // If your controller returns JSON, you can inspect result.success
+                alert("Exam deleted successfully!");
+                getData(); // reload table
+            },
+            error: function(xhr, status, error) {
+                console.error("Error deleting exam:", error, xhr.responseText);
+                alert("Error deleting exam. See console for details.");
+            }
+        });
+    });
+
+    });
+
+    function getData(){
+
+        // AJAX call to fetch exam configs
+        $.ajax({
+            url: '@Url.Action("GetExamConfigs", "Home")',
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                var tbody = $("#examTable tbody");
+                tbody.empty(); // clear existing rows
+
+                $.each(data, function(index, exam) {
+                    var row = `<tr>
+                        <td>${exam.id}</td>
+                        <td>${exam.title}</td>
+                        <td>${exam.examStartDate ? new Date(exam.examStartDate).toLocaleDateString() : ''}</td>
+                        <td>${exam.examEndDate ? new Date(exam.examEndDate).toLocaleDateString() : ''}</td>
+                        <td>${exam.durationMinutes}</td>
+                        <td>${exam.totalQuestions ?? ''}</td>
+                        <td>${exam.totalMarks ?? ''}</td>
+                        <td>${exam.passingMarks ?? ''}</td>
+                        <td>${exam.isNegativeMarking ? "Yes" : "No"}</td>
+                        <td>${exam.instructions ?? ''}</td>
+                        <td>
+                            <a href="/Home/EditExam/${exam.id}" class="btn btn-sm btn-warning">Edit Exam</a>
+                            <a href="/Question/ConfigQuestion?examId=${exam.id}" class="btn btn-sm btn-info">Config Question</a>
+                            <a class="btn btn-sm btn-danger delete-exam" data-id="${exam.id}">Delete</a>
+                        </td>
+                    </tr>`;
+                    tbody.append(row);
+                });
+            },
+            error: function(xhr, status, error) {
+                console.error("Error fetching exam configs: ", error);
+            }
+        });
+    }
+
+   
+    
+</script>

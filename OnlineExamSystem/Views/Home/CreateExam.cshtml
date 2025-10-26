@@ -1,0 +1,137 @@
+﻿@model OnlineExamSystem.Models.ExamConfig
+@{
+    ViewData["Title"] = "Create Exam";
+}
+
+<h2>Create Exam</h2>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+
+    <script>
+                // Add a new empty section block (client-side)
+                function addSection() {
+                    var index = $('#sectionsContainer .section-item').length;
+                    var html = `
+        <div class="section-item border rounded p-3 mb-2">
+            <div class="mb-2">
+                <label>Section Title</label>
+                <input name="Sections[${index}].Title" class="form-control" />
+            </div>
+            <div class="row">
+                <div class="col">
+                    <label>Question Count</label>
+                    <input name="Sections[${index}].QuestionCount" type="number" class="form-control" />
+                </div>
+                <div class="col">
+                    <label>Duration (minutes)</label>
+                    <input name="Sections[${index}].DurationMinutes" type="number" class="form-control" />
+                </div>
+                <div class="col">
+                    <label>Marks / Q</label>
+                    <input name="Sections[${index}].MarksPerQuestion" type="number" step="0.01" class="form-control" />
+                </div>
+                <div class="col">
+                    <label>Negative / Q</label>
+                    <input name="Sections[${index}].NegativeMarksPerQuestion" type="number" step="0.01" class="form-control" />
+                </div>
+            </div>
+            <div class="mt-2 text-end">
+                <button type="button" class="btn btn-sm btn-danger" onclick="$(this).closest('.section-item').remove(); reIndexSections();">Remove</button>
+            </div>
+        </div>`;
+                    $('#sectionsContainer').append(html);
+                }
+
+                function reIndexSections() {
+                    $('#sectionsContainer .section-item').each(function(i, el) {
+                        $(el).find('input, select, textarea').each(function() {
+                            var name = $(this).attr('name');
+                            if (!name) return;
+                            // replace Sections[\d+] with new index
+                            var newName = name.replace(/Sections\[\d+\]/, `Sections[${i}]`);
+                            $(this).attr('name', newName);
+                        });
+                    });
+                }
+
+                $(function() {
+                    $('#addSectionBtn').click(function(){ addSection(); });
+                });
+    </script>
+}
+
+<form asp-action="Create" method="post" novalidate>
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label"></label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label asp-for="ExamStartDate" class="form-label"></label>
+            <input asp-for="ExamStartDate" class="form-control" type="date" />
+            <span asp-validation-for="ExamStartDate" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="ExamEndDate" class="form-label"></label>
+            <input asp-for="ExamEndDate" class="form-control" type="date" />
+            <span asp-validation-for="ExamEndDate" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="DurationMinutes" class="form-label"></label>
+            <input asp-for="DurationMinutes" class="form-control" type="number" />
+            <span asp-validation-for="DurationMinutes" class="text-danger"></span>
+        </div>
+        @* <div class="col-md-3">
+            <label asp-for="Type" class="form-label"></label>
+            <select asp-for="Type" class="form-select" asp-items="Html.GetEnumSelectList<OnlineExamSystem.Models.ExamType>()"></select>
+            <span asp-validation-for="Type" class="text-danger"></span>
+        </div> *@
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label asp-for="TotalQuestions" class="form-label"></label>
+            <input asp-for="TotalQuestions" class="form-control" />
+            <span asp-validation-for="TotalQuestions" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="TotalMarks" class="form-label"></label>
+            <input asp-for="TotalMarks" class="form-control" step="0.01" />
+            <span asp-validation-for="TotalMarks" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="PassingMarks" class="form-label"></label>
+            <input asp-for="PassingMarks" class="form-control" step="0.01" />
+            <span asp-validation-for="PassingMarks" class="text-danger"></span>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <div class="form-check">
+                <input asp-for="IsNegativeMarking" class="form-check-input" />
+                <label asp-for="IsNegativeMarking" class="form-check-label"></label>
+            </div>
+        </div>
+    </div>
+
+   @*  <div class="mb-3">
+        <label class="form-label">Sections</label>
+        <div id="sectionsContainer">
+        </div>
+        <div class="mt-2">
+            <button type="button" id="addSectionBtn" class="btn btn-secondary">Add Section</button>
+        </div>
+    </div> *@
+
+    <div class="mb-3">
+        <label asp-for="Instructions" class="form-label"></label>
+        <textarea asp-for="Instructions" class="form-control" rows="4"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Exam</button>
+    <a asp-action="Index" class="btn btn-light">Cancel</a>
+</form>

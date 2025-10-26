@@ -1,0 +1,40 @@
+﻿@model OnlineExamSystem.Models.ExamConfig
+
+<h2>Edit Exam - @Model.Title</h2>
+
+<form asp-action="EditExam" method="post">
+    <input type="hidden" asp-for="Id" />
+
+    <div class="form-group">
+        <label asp-for="Title"></label>
+        <input asp-for="Title" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ExamStartDate"></label>
+        <input asp-for="ExamStartDate" type="date" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ExamEndDate"></label>
+        <input asp-for="ExamEndDate" type="date" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label asp-for="DurationMinutes"></label>
+        <input asp-for="DurationMinutes" type="number" class="form-control" />
+    </div>
+
+    <div class="form-check">
+        <input asp-for="IsNegativeMarking" class="form-check-input" />
+        <label asp-for="IsNegativeMarking" class="form-check-label"></label>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Instructions"></label>
+        <textarea asp-for="Instructions" class="form-control"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-2">Save Changes</button>
+    <a asp-action="Config" class="btn btn-secondary mt-2">Cancel</a>
+</form>

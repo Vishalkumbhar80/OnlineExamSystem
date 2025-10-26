@@ -1,0 +1,145 @@
+﻿@model OnlineExamSystem.Models.Question
+@{
+    ViewData["Title"] = "Add Question";
+}
+
+<h2>Add Question for Exam @Model.ExamConfigId</h2>
+
+<form asp-action="CreateQuestions" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ExamConfigId" />
+
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label">Question Title</label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label asp-for="Marks" class="form-label">Marks</label>
+            <input asp-for="Marks" class="form-control" type="number" step="0.01" />
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <div class="form-check">
+                <input asp-for="IsMultipleAnswer" class="form-check-input" />
+                <label asp-for="IsMultipleAnswer" class="form-check-label">Multiple correct answers</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-2">
+        <label class="form-label">Options</label>
+        <div id="optionsContainer">
+            <!-- Option rows will be injected here -->
+            <!-- Start with two default options -->
+        </div>
+
+        <button type="button" id="addOptionBtn" class="btn btn-secondary btn-sm mt-2">Add Option</button>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Save Question</button>
+    <a asp-action="EditQuestion" asp-route-examId="@Model.ExamConfigId" class="btn btn-secondary mt-3">Back</a>
+</form>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+            // addOption: create hidden (with name) + checkbox (no name) so hidden is single source-of-truth
+            function addOption(optionText = '', isCorrect = false) {
+                var index = $('#optionsContainer .option-item').length;
+                var html = `
+        <div class="option-item mb-2 border rounded p-2" data-index="${index}">
+          <div class="row g-2 align-items-center">
+            <div class="col-auto d-flex align-items-center">
+              <!-- hidden carries the actual posted value; checkbox has no name -->
+              <input type="hidden" name="Options[${index}].IsCorrect" value="${isCorrect ? 'true' : 'false'}" class="hidden-iscorrect" />
+              <input type="checkbox" class="chk-iscorrect" ${isCorrect ? 'checked' : ''} />
+            </div>
+            <div class="col">
+              <input type="text" name="Options[${index}].OptionText" class="form-control option-text" value="${(optionText || '').replace(/"/g,'&quot;')}" placeholder="Option text" />
+            </div>
+            <div class="col-auto">
+              <button type="button" class="btn btn-sm btn-danger remove-option">Remove</button>
+            </div>
+          </div>
+        </div>`;
+                $('#optionsContainer').append(html);
+            }
+
+            // re-index names for hidden and option text inputs
+            function reIndexOptions() {
+                $('#optionsContainer .option-item').each(function (i, el) {
+                    $(el).attr('data-index', i);
+
+                    // update hidden IsCorrect name
+                    $(el).find('.hidden-iscorrect').each(function () {
+                        $(this).attr('name', `Options[${i}].IsCorrect`);
+                    });
+
+                    // update option text name
+                    $(el).find('.option-text').each(function () {
+                        $(this).attr('name', `Options[${i}].OptionText`);
+                    });
+                });
+            }
+
+            $(function () {
+                // initial two options (if none)
+                if ($('#optionsContainer .option-item').length === 0) {
+                    addOption('', false);
+                    addOption('', false);
+                }
+
+                // When checkbox toggled, update corresponding hidden input value
+                $('#optionsContainer').on('change', '.chk-iscorrect', function () {
+                    var $row = $(this).closest('.option-item');
+                    var isChecked = $(this).is(':checked');
+                    var $hidden = $row.find('.hidden-iscorrect').first();
+
+                    if ($hidden.length === 0) {
+                        // should not happen if addOption used — but create if missing
+                        $hidden = $(`<input type="hidden" class="hidden-iscorrect" />`);
+                        $(this).before($hidden);
+                    }
+                    $hidden.val(isChecked ? 'true' : 'false');
+                });
+
+                // Add option button
+                $('#addOptionBtn').on('click', function () {
+                    addOption('', false);
+                    reIndexOptions();
+                });
+
+                // Remove option handler
+                $('#optionsContainer').on('click', '.remove-option', function () {
+                    $(this).closest('.option-item').remove();
+                    reIndexOptions();
+                });
+
+                // Before submit: reindex and ensure hidden inputs reflect checkbox state
+                $('form[asp-action="CreateQuestions"], form[action$="/CreateQuestions"]').on('submit', function (e) {
+                    reIndexOptions();
+
+                    // Sync hidden values with checkboxes one last time
+                    $('#optionsContainer .option-item').each(function () {
+                        var $row = $(this);
+                        var $chk = $row.find('.chk-iscorrect').first();
+                        var $hidden = $row.find('.hidden-iscorrect').first();
+
+                        var checked = $chk.is(':checked');
+                        if ($hidden.length === 0) {
+                            $hidden = $(`<input type="hidden" class="hidden-iscorrect" />`);
+                            $chk.before($hidden);
+                        }
+                        $hidden.attr('name', $hidden.attr('name') || $hidden.attr('data-name') || $hidden.attr('name'));
+                        $hidden.val(checked ? 'true' : 'false');
+                    });
+
+                    // allow form to submit
+                });
+            });
+    </script>
+
+}
