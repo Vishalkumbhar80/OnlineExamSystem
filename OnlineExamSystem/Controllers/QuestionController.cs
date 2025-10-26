@@ -25,34 +25,6 @@ namespace OnlineExamSystem.Controllers
             return View(model);
         }
 
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public IActionResult CreateQuestions(Question model)
-        //{
-        //    if (!ModelState.IsValid)
-        //    {
-        //        return View(model);
-        //    }
-
-        //    if (model.Options == null || model.Options.Count == 0)
-        //    {
-        //        ModelState.AddModelError("", "Please add at least one option.");
-        //        return View(model);
-        //    }
-
-        //    if (!model.Options.Exists(o => o.IsCorrect))
-        //    {
-        //        ModelState.AddModelError("", "Please mark at least one option as correct.");
-        //        return View(model);
-        //    }
-
-        //    var dal = new QuestionDAL();
-        //    int newId = dal.InsertQuestionWithOptions(model);
-
-        //    // redirect to listing of questions for that exam
-        //    return RedirectToAction("EditQuestion", new { examId = model.ExamConfigId });
-
-        //}
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -85,7 +57,10 @@ namespace OnlineExamSystem.Controllers
             var dal = new QuestionDAL();
             int newId = dal.InsertQuestionWithOptions(model);
 
-            return RedirectToAction("EditQuestion", new { examId = model.ExamConfigId });
+            var questions = dal.GetQuestionsByExamId(model.ExamConfigId);
+
+            ViewBag.ExamId = model.ExamConfigId;
+            return RedirectToAction("ConfigQuestion", new { examId = model.ExamConfigId });
         }
 
         [HttpPost]
