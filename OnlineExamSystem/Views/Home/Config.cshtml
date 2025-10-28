@@ -1,6 +1,7 @@
 ﻿@{
     ViewData["Title"] = "Exam Configurations";
 }
+<h1>Exam Configurations </h1>
 
 <!-- Create Exam Button -->
 <a asp-controller="Home" asp-action="CreateExam" class="btn btn-primary mb-3">Create Exam</a>
@@ -9,7 +10,7 @@
 <table class="table table-bordered table-striped" id="examTable">
     <thead>
         <tr>
-            <th>Id</th>
+            @* <th class="hidden-col">Id</th> *@
             <th>Title</th>
             <th>Start Date</th>
             <th>End Date</th>
@@ -72,8 +73,8 @@
                 tbody.empty(); // clear existing rows
 
                 $.each(data, function(index, exam) {
-                    var row = `<tr>
-                        <td>${exam.id}</td>
+                    var row = `<tr class="justify-content-start gap-2">
+                       
                         <td>${exam.title}</td>
                         <td>${exam.examStartDate ? new Date(exam.examStartDate).toLocaleDateString() : ''}</td>
                         <td>${exam.examEndDate ? new Date(exam.examEndDate).toLocaleDateString() : ''}</td>
@@ -84,9 +85,13 @@
                         <td>${exam.isNegativeMarking ? "Yes" : "No"}</td>
                         <td>${exam.instructions ?? ''}</td>
                         <td>
-                            <a href="/Home/EditExam/${exam.id}" class="btn btn-sm btn-warning">Edit Exam</a>
-                            <a href="/Question/ConfigQuestion?examId=${exam.id}" class="btn btn-sm btn-info">Config Question</a>
-                            <a class="btn btn-sm btn-danger delete-exam" data-id="${exam.id}">Delete</a>
+                            
+    <div class="d-flex justify-content-start gap-1">
+        <a href="/Home/EditExam/${exam.id}" class="btn btn-sm btn-warning">Edit Exam</a>
+        <a href="/Question/ConfigQuestion?examId=${exam.id}" class="btn btn-sm btn-info">Config Question</a>
+        <a href="javascript:void(0);" class="btn btn-sm btn-danger delete-exam" data-id="${exam.id}">Delete</a>
+    </div>
+
                         </td>
                     </tr>`;
                     tbody.append(row);

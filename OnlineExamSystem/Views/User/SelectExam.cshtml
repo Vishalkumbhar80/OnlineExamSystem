@@ -1,0 +1,28 @@
+﻿@model OnlineExamSystem.Models.SelectExamViewModel
+@{
+    ViewData["Title"] = "Select Exam";
+}
+
+<h2>Select Exam</h2>
+
+<form asp-action="SelectExam" method="post" class="row g-3">
+    @Html.AntiForgeryToken()
+
+    <div class="col-md-6">
+        <label asp-for="SelectedExamId" class="form-label">Exam</label>
+        <select asp-for="SelectedExamId" asp-items="Model.Exams" class="form-select">
+        </select>
+        <span asp-validation-for="SelectedExamId" class="text-danger"></span>
+    </div>
+
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Proceed</button>
+        <a asp-controller="Home" asp-action="Config" class="btn btn-secondary ms-2">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+}
