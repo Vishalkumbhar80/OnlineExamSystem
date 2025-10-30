@@ -1,0 +1,62 @@
+﻿@model OnlineExamSystem.Models.ExamConfig
+@{
+    ViewData["Title"] = "Exam Instructions";
+}
+
+<h2>@Model.Title</h2>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Start Date</dt>
+            <dd class="col-sm-9">@Model.ExamStartDate?.ToString("yyyy-MM-dd HH:mm")</dd>
+
+            <dt class="col-sm-3">End Date</dt>
+            <dd class="col-sm-9">@Model.ExamEndDate?.ToString("yyyy-MM-dd HH:mm")</dd>
+
+            <dt class="col-sm-3">Duration</dt>
+            <dd class="col-sm-9">@Model.DurationMinutes minutes</dd>
+
+            <dt class="col-sm-3">Total Questions</dt>
+            <dd class="col-sm-9">@Model.TotalQuestions</dd>
+
+            <dt class="col-sm-3">Total Marks</dt>
+            <dd class="col-sm-9">@Model.TotalMarks</dd>
+
+            <dt class="col-sm-3">Passing Marks</dt>
+            <dd class="col-sm-9">@Model.PassingMarks</dd>
+        </dl>
+
+        <h5>Instructions</h5>
+        <div class="mb-3">
+            @if (!string.IsNullOrWhiteSpace(Model.Instructions))
+            {
+                @* Use Raw if you store trusted HTML. Otherwise render plain text. *@
+                <div>@Html.Raw(Model.Instructions)</div>
+            }
+            else
+            {
+                <div>No instructions provided for this exam.</div>
+            }
+        </div>
+
+        @if (ViewBag.ExamNotStarted == true)
+        {
+            <div class="alert alert-warning">This exam has not started yet.</div>
+        }
+        else if (ViewBag.ExamExpired == true)
+        {
+            <div class="alert alert-danger">This exam has already ended.</div>
+        }
+        else
+        {
+            <form asp-action="StartExam" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="examId" value="@Model.Id" />
+                <button type="submit" class="btn btn-success btn-lg">Take Exam</button>
+            </form>
+        }
+
+        <a asp-action="SelectExam" asp-controller="User" class="btn btn-secondary ms-2">Back</a>
+    </div>
+</div>

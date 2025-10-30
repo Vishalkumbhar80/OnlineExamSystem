@@ -81,6 +81,7 @@ namespace OnlineExamSystem.Common
             {
                 cmd.CommandType = CommandType.StoredProcedure;
 
+                cmd.CommandTimeout = 300;
                 // Add parameters
                 if (parameters != null)
                 {
@@ -104,21 +105,29 @@ namespace OnlineExamSystem.Common
         }
 
 
-        public static void ExecuteStoredProcedureEditExam(string storedProcedureName, Dictionary<string, object> parameters)
+        public static DataSet ExecuteDataset(string storedProcedure, Dictionary<string, object> parameters = null)
         {
-            using (var conn = new SqlConnection(connectionString))
-            using (var cmd = new SqlCommand(storedProcedureName, conn))
+            DataSet ds = new DataSet();
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SqlCommand cmd = new SqlCommand(storedProcedure, conn))
+            using (SqlDataAdapter da = new SqlDataAdapter(cmd))
             {
                 cmd.CommandType = CommandType.StoredProcedure;
 
-                foreach (var kvp in parameters)
+                cmd.CommandTimeout = 300;
+                if (parameters != null)
                 {
-                    cmd.Parameters.AddWithValue(kvp.Key, kvp.Value ?? DBNull.Value);
+                    foreach (var param in parameters)
+                    {
+                        cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
+                    }
                 }
 
-                conn.Open();
-                cmd.ExecuteNonQuery();
+                da.Fill(ds);
             }
+
+            return ds;
         }
 
 

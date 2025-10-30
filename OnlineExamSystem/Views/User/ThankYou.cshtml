@@ -1,0 +1,32 @@
+﻿@model OnlineExamSystem.Models.ExamResultViewModel
+
+<h2>Thank You for Submitting the Exam!</h2>
+
+<h3>@Model.ExamTitle</h3>
+
+<p><strong>Total Marks:</strong> @Model.TotalMarks</p>
+<p><strong>Obtained Marks:</strong> @Model.ObtainedMarks</p>
+<p><strong>Result:</strong> @Model.Result</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Question</th>
+            <th>Your Answer</th>
+            <th>Correct Answer</th>
+            <th>Marks</th>
+            
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var q in Model.Questions)
+        {
+            <tr>
+                <td>@q.QuestionText</td>
+                <td>@q.SelectedOption</td>
+                <td>@q.CorrectOption</td>
+                <td>@q.Marks</td>
+            </tr>
+        }
+    </tbody>
+</table>

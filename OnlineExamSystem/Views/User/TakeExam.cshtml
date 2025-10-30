@@ -1,0 +1,176 @@
+﻿@model OnlineExamSystem.Models.ExamTakeViewModel
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Take Exam - " + Model.Exam.Title;
+}
+
+<h2>@Model.Exam.Title</h2>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <strong>Time Remaining:</strong>
+        <span id="timeRemaining" class="text-danger fw-bold"></span>
+    </div>
+    <div>
+        <button id="submitExamBtn" class="btn btn-danger">Submit Exam</button>
+    </div>
+</div>
+
+<div id="examContainer">
+    <div id="questionArea"></div>
+
+    <div class="mt-3 d-flex justify-content-between align-items-center">
+        <button id="prevBtn" class="btn btn-secondary">Previous</button>
+        <div>
+            <span id="questionIndex">1</span> / @Model.Questions.Count
+        </div>
+        <button id="nextBtn" class="btn btn-secondary">Next</button>
+    </div>
+</div>
+
+<!-- 🧾 Standard form for submission -->
+<form id="submitForm" asp-action="Submit" asp-controller="User" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="examId" value="@Model.Exam.Id" />
+    <div id="answersContainer"></div>
+</form>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        (function() {
+            const questions = @Html.Raw(JsonSerializer.Serialize(Model.Questions,
+            new JsonSerializerOptions { PropertyNamingPolicy = null }));
+
+            console.log("Questions loaded:", questions);
+
+            const durationMinutes = @Model.Exam.DurationMinutes;
+            let remainingSeconds = (durationMinutes && durationMinutes > 0) ? durationMinutes * 60 : 1800;
+            const answers = {}; // { questionId: [optionId, optionId] }
+            let currentIndex = 0;
+
+            function escapeHtml(s) { return $('<div/>').text(s || '').html(); }
+
+            function renderQuestion(index) {
+                const q = questions[index];
+                if (!q) return;
+                const qHtml = [];
+
+                qHtml.push(`<div class="card mb-3"><div class="card-body">`);
+                qHtml.push(`<h5>Q${index + 1}. ${escapeHtml(q.Title)}</h5>`);
+
+                if (q.Options && q.Options.length > 0) {
+                    for (let opt of q.Options) {
+                        const inputId = `opt_${q.Id}_${opt.Id}`;
+                        // const checked = (answers[q.Id] && answers[q.Id].includes(opt.Id)) ? 'checked' : '';
+                        const checked = (q.SelectedOptionIds && q.SelectedOptionIds.includes(opt.Id)) ? 'checked' : '';
+                        const inputType = q.IsMultipleAnswer ? "checkbox" : "radio";
+                        const nameAttr = q.IsMultipleAnswer ? "" : `name="radio_${q.Id}"`;
+
+                        qHtml.push(`
+                            <div class="form-check">
+                                <input class="form-check-input answer-input" type="${inputType}"
+                                       ${nameAttr} data-qid="${q.Id}" data-optid="${opt.Id}"
+                                       id="${inputId}" ${checked} />
+                                <label class="form-check-label" for="${inputId}">
+                                    ${escapeHtml(opt.OptionText)}
+                                </label>
+                            </div>
+                        `);
+                    }
+                } else {
+                    qHtml.push('<div class="text-muted">No options available.</div>');
+                }
+
+                qHtml.push('</div></div>');
+                $('#questionArea').html(qHtml.join(''));
+                $('#questionIndex').text(index + 1);
+            }
+
+            // handle answer selection
+            $(document).on('change', '.answer-input', function() {
+                const qid = parseInt($(this).data('qid'));
+                const optid = parseInt($(this).data('optid'));
+                const q = questions.find(x => x.Id === qid);
+                if (!q) return;
+
+                if (q.IsMultipleAnswer) {
+                    answers[qid] = answers[qid] || [];
+                    if ($(this).is(':checked')) {
+                        if (!answers[qid].includes(optid)) answers[qid].push(optid);
+                    } else {
+                        answers[qid] = answers[qid].filter(x => x !== optid);
+                    }
+                } else {
+                    answers[qid] = [optid];
+                }
+            });
+
+            // navigation
+            $('#nextBtn').click(() => {
+                if (currentIndex < questions.length - 1) {
+                    currentIndex++;
+                    renderQuestion(currentIndex);
+                }
+            });
+            $('#prevBtn').click(() => {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    renderQuestion(currentIndex);
+                }
+            });
+
+            // prepare and submit form
+            $('#submitExamBtn').click(() => {
+                if (confirm('Are you sure you want to submit the exam?')) {
+                    const $answers = $('#answersContainer');
+                    $answers.empty();
+
+                    let i = 0;
+                    for (const qid in answers) {
+                        const selected = answers[qid];
+                        if (!selected || selected.length === 0) continue;
+
+                        $answers.append(`<input type="hidden" name="answers[${i}].QuestionId" value="${qid}" />`);
+                        selected.forEach((optId, j) => {
+                            $answers.append(`<input type="hidden" name="answers[${i}].SelectedOptionIds[${j}]" value="${optId}" />`);
+                        });
+                        i++;
+                    }
+
+                    $('#submitForm').submit();
+                }
+            });
+
+            // timer
+            function updateTimeDisplay() {
+                const mins = Math.floor(remainingSeconds / 60);
+                const secs = remainingSeconds % 60;
+                $('#timeRemaining').text(`${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`);
+            }
+
+            function startTimer() {
+                updateTimeDisplay();
+                const timer = setInterval(() => {
+                    remainingSeconds--;
+                    if (remainingSeconds <= 0) {
+                        clearInterval(timer);
+                        alert("Time up! Auto-submitting exam...");
+                        $('#submitExamBtn').trigger('click');
+                    }
+                    updateTimeDisplay();
+                }, 1000);
+            }
+
+            if (!questions || questions.length === 0) {
+                $('#questionArea').html('<div class="alert alert-warning">No questions available.</div>');
+                $('#nextBtn, #prevBtn, #submitExamBtn').prop('disabled', true);
+            } else {
+                renderQuestion(currentIndex);
+                startTimer();
+            }
+        })();
+    </script>
+}

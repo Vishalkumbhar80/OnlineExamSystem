@@ -1,0 +1,135 @@
+﻿@model OnlineExamSystem.Models.LoginModel
+@{
+    Layout = null;
+    ViewData["Title"] = "User Login";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - OnlineExamSystem</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <style>
+        /* Background */
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #e8f0fe 0%, #ffffff 100%);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Header */
+        header {
+            background-color: #0d6efd;
+            color: white;
+            text-align: center;
+            padding: 1rem 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Main content */
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: #fff;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .login-title {
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-primary {
+            width: 100%;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #f8f9fa;
+            border-top: 1px solid #e5e5e5;
+            text-align: center;
+            padding: 0.75rem 0;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        Online Exam System
+    </header>
+
+    <!-- Main -->
+    <main>
+        <div class="login-card">
+            <h3 class="login-title">Login</h3>
+
+            <!-- Success / Error Messages -->
+            @if (TempData["LoginSuccess"] != null)
+            {
+                <div class="alert alert-success">@TempData["LoginSuccess"]</div>
+            }
+
+            @if (ViewBag.LoginError != null)
+            {
+                <div class="alert alert-danger">@ViewBag.LoginError</div>
+            }
+
+            <!-- Login Form -->
+            <form asp-action="CreateLogin" method="post" novalidate>
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="UserEmail" class="form-label">Email</label>
+                    <input asp-for="UserEmail" class="form-control" type="email" placeholder="Enter your email" />
+                    <span asp-validation-for="UserEmail" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label">Password</label>
+                    <input asp-for="Password" class="form-control" type="password" placeholder="Enter your password" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary mt-2">Login</button>
+                <a asp-action="UserRagister" class="btn btn-outline-secondary w-100 mt-2">Sign Up</a>
+            </form>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        &copy; @DateTime.Now.Year - OnlineExamSystem | <a asp-controller="Home" asp-action="Privacy" class="text-decoration-none text-muted">Privacy</a>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+
+</body>
+</html>
