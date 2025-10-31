@@ -3,6 +3,9 @@
     Layout = null;
     ViewData["Title"] = "User Login";
 }
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,6 +87,8 @@
 
     <!-- Main -->
     <main>
+
+        
         <div class="login-card">
             <h3 class="login-title">Login</h3>
 
@@ -96,6 +101,12 @@
             @if (ViewBag.LoginError != null)
             {
                 <div class="alert alert-danger">@ViewBag.LoginError</div>
+            }
+            @if (TempData["LogoutMessage"] != null)
+            {
+                <div class="alert alert-info text-center">
+                    @TempData["LogoutMessage"]
+                </div>
             }
 
             <!-- Login Form -->

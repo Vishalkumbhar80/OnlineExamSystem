@@ -21,7 +21,8 @@ namespace OnlineExamSystem.DAL
                 { "@DateOfBirth", user.DateOfBirth },
                 { "@Gender", user.Gender },
                 { "@PhoneNumber",user.PhoneNumber },
-                { "@Password", user.Password   }
+                { "@Password", user.Password   },
+               { "@IsActive",user.IsActive }
             };
 
 
@@ -58,22 +59,41 @@ namespace OnlineExamSystem.DAL
             DataRow row = dt.Rows[0];
             return new UserModel
             {
-                UserId = Convert.ToInt32(row["Id"]),
-                FirstName = Convert.ToString(row["FirstName"].ToString()),
-                LastName = Convert.ToString(row["LastName"].ToString()),
-                Email = Convert.ToString(row["Email"].ToString()),
-                DateOfBirth = Convert.ToDateTime(row["DateOfBirth"]),
-                Gender =Convert.ToString( row["Gender"].ToString()),
-
-                PhoneNumber = Convert.ToString(row["PhoneNumber"].ToString()),
-                Password = Convert.ToString(row["Password"].ToString()),
-
-
-
+                UserId = row["Id"] != DBNull.Value ? Convert.ToInt32(row["Id"]) : 0,
+                FirstName = row["FirstName"] != DBNull.Value ? row["FirstName"].ToString() : string.Empty,
+                LastName = row["LastName"] != DBNull.Value ? row["LastName"].ToString() : string.Empty,
+                Email = row["Email"] != DBNull.Value ? row["Email"].ToString() : string.Empty,
+                DateOfBirth = row["DateOfBirth"] != DBNull.Value ? Convert.ToDateTime(row["DateOfBirth"]) : (DateTime?)null,
+                Gender = row["Gender"] != DBNull.Value ? row["Gender"].ToString() : string.Empty,
+                PhoneNumber = row["PhoneNumber"] != DBNull.Value ? row["PhoneNumber"].ToString() : string.Empty,
+                Password = row["Password"] != DBNull.Value ? row["Password"].ToString() : string.Empty
             };
 
-            
+        }
+        public List<RoleModel> GetUserRole(int UserId)
+        {
+            var parameters = new Dictionary<string, object>
+            {
+                { "@UserId", UserId},
+            };
+            DataTable dt = SqlHelper.ExecuteStoredProcedureSelect(
+               storedProcedureName: "usp_GetUserRole",
+               parameters: parameters);
 
-        }   
+            if (dt.Rows.Count == 0) return null;
+
+            var list = new List<RoleModel>();
+
+            foreach (DataRow row in dt.Rows)
+            {
+                list.Add(new RoleModel
+                {
+                    RoleId = Convert.ToInt32(row["RoleId"]),
+                    RoleName = Convert.ToString(row["RoleName"].ToString()),
+                });
+            }
+
+            return list;
+        }
     }
 }

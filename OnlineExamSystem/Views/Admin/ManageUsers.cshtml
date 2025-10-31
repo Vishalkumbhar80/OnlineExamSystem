@@ -1,0 +1,74 @@
+﻿@model List<OnlineExamSystem.Models.UserModel>
+@{
+    ViewData["Title"] = "Manage Users";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Manage Users</h2>
+        <a asp-action="EditUser" class="btn btn-primary">Create New User</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-primary">
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Roles</th>
+                <th>Status</th>
+                <th style="min-width:220px">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var u in Model)
+            {
+                <tr>
+                    <td>@u.UserId</td>
+                    <td>@($"{u.FirstName} {u.LastName}")</td>
+                    <td>@u.Email</td>
+                    <td>@u.PhoneNumber</td>
+                    <td>
+                        @if (!string.IsNullOrWhiteSpace(u.Role))
+                        {
+                            <span>@u.Role</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">No roles</span>
+                        }
+                    </td>
+                    <td>
+                        @if (u.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Inactive</span>
+                        }
+                    </td>
+                    <td>
+                        <a asp-action="EditUser" asp-route-id="@u.UserId" class="btn btn-sm btn-info">Edit</a>
+
+                        <form asp-action="ToggleUserStatus" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@u.UserId" />
+                            <button class="btn btn-sm btn-warning">@(u.IsActive ? "Deactivate" : "Activate")</button>
+                        </form>
+
+                        <form asp-action="DeleteUser" method="post" class="d-inline ms-2" onsubmit="return confirm('Delete user?');">
+                            <input type="hidden" name="id" value="@u.UserId" />
+                            <button class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

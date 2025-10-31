@@ -1,12 +1,17 @@
 ﻿using System.Data;
+using System.Linq;
+
 using Microsoft.AspNetCore.Mvc;
 using OnlineExamSystem.Common;
 using OnlineExamSystem.Models;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace OnlineExamSystem.DAL
 {
     public class UserDAL
     {
+
+
         public int SaveExamSubmission(int examId, int userId)
         {
 
@@ -126,6 +131,10 @@ namespace OnlineExamSystem.DAL
             var totalMarks = Convert.ToDecimal(ds.Tables[0].Rows[0]["TotalMarks"]);
             var obtainedMarks = Convert.ToDecimal(ds.Tables[0].Rows[0]["ObtainedMarks"]);
             var result = Convert.ToString(ds.Tables[0].Rows[0]["Result"]);
+            var passingMarks = Convert.ToInt32(ds.Tables[0].Rows[0]["PassingMarks"]);
+            
+
+
 
             var questions = ds.Tables[1].AsEnumerable().Select(static q => new ExamResultQuestion
             {
@@ -133,22 +142,215 @@ namespace OnlineExamSystem.DAL
                 SelectedOption = q.Field<string>("SelectedOption"),
                 CorrectOption = q.Field<string>("CorrectOption"),
                 Marks = q.Field<decimal>("Marks"),
-
-                //IsCorrect = q.Field<bool>("IsCorrect")
+                IsCorrect = q.Field<int>("IsCorrect") == 1 ? true : false,
+                QuestionStatus = q.Field<string>("QuestionStatus")
             }).ToList();
 
             return new ExamResultViewModel
             {
+                ExamConfigId = examId,
                 ExamTitle = examTitle,
                 TotalMarks = totalMarks,
                 ObtainedMarks = obtainedMarks,
                 Questions = questions,
-                Result =result
+                Result = result,
+                PassingMarks = passingMarks,
+                
+
             };
         }
 
+        public List<UserModel> GetAllUsers()
+        {
+            var dt = SqlHelper.ExecuteStoredProcedureSelect("usp_GetAllUsers");
+            var list = new List<UserModel>();
+
+            foreach (DataRow r in dt.Rows)
+            {
+                list.Add(new UserModel
+                {
+                    UserId = Convert.ToInt32(r["UserId"]),
+                    FirstName = r["FirstName"]?.ToString(),
+                    LastName = r["LastName"]?.ToString(),
+                    Email = r["Email"]?.ToString(),
+                    PhoneNumber = r["PhoneNumber"]?.ToString(),
+                    Gender = r["Gender"]?.ToString(),
+                    DateOfBirth = r["DateOfBirth"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(r["DateOfBirth"]),
+                    IsActive = r["IsActive"] != DBNull.Value && Convert.ToBoolean(r["IsActive"]),
+                    Role = r["Role"]?.ToString()
+
+                    // RoleName now holds "Admin,User" or single role depending on SP
+                });
+            }
+            return list;
+        }
+        public (UserModel user, List<int> roleIds) GetUserById(int userId)
+        {
+            var ds = SqlHelper.ExecuteDataset("usp_GetUserById", new Dictionary<string, object> { { "@UserId", userId } });
+
+            UserModel user = null;
+            var roleIds = new List<int>();
+
+            if (ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+            {
+                var r = ds.Tables[0].Rows[0];
+                user = new UserModel
+                {
+                    UserId = Convert.ToInt32(r["UserId"]),
+                    FirstName = r["FirstName"].ToString(),
+                    LastName = r["LastName"].ToString(),
+                    Email = r["Email"].ToString(),
+                    PhoneNumber = r["PhoneNumber"]?.ToString(),
+                    Gender = r["Gender"]?.ToString(),
+                    DateOfBirth = r["DateOfBirth"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(r["DateOfBirth"]),
+                    IsActive = r["IsActive"] != DBNull.Value && Convert.ToBoolean(r["IsActive"])
+                };
+            }
+
+            if (ds.Tables.Count > 1)
+            {
+                foreach (DataRow rr in ds.Tables[1].Rows)
+                {
+                    roleIds.Add(Convert.ToInt32(rr["RoleId"]));
+                }
+            }
+
+            return (user, roleIds);
+        }
 
 
+        public DataTable GetAllRoles()
+        {
+            return SqlHelper.ExecuteStoredProcedureSelect("usp_GetAllRoles");
+        }
 
+        public int CreateUser(UserModel model, int? roleId)
+        {
+            var param = new Dictionary<string, object>
+            {
+                {"@Email", model.Email},
+                {"@Password", model.Password ?? "Temp@123"}, // hash it in real app
+                {"@FirstName", model.FirstName},
+                {"@LastName", model.LastName},
+                {"@PhoneNumber", model.PhoneNumber},
+                {"@Gender", model.Gender},
+                {"@DateOfBirth", model.DateOfBirth == DateTime.MinValue ? (object)DBNull.Value : model.DateOfBirth},
+                {"@RoleIds",string.Join(",", model.SelectedRoleIds ?? new List<int>()) },
+            };
+
+            var result = SqlHelper.ExecuteStoredProcedure("usp_CreateUser", param, outputParamName: null);
+            // usp_CreateUser returns NewUserId in result set; since your helper doesn't return SELECT result, you may alter the SP to output; or re-query.
+            return 1; // or fetch newly created ID as needed
+        }
+
+        public void UpdateUser(UserModel model)
+        {
+            var param = new Dictionary<string, object>
+            {
+                {"@UserId", model.UserId},
+                {"@Email", model.Email},
+                {"@FirstName", model.FirstName},
+                {"@LastName", model.LastName},
+                {"@PhoneNumber", model.PhoneNumber ?? (object)DBNull.Value},
+                {"@Gender", model.Gender ?? (object)DBNull.Value},
+                {"@DateOfBirth", model.DateOfBirth == DateTime.MinValue ? (object)DBNull.Value : model.DateOfBirth},
+                {"@IsActive", model.IsActive},
+                {"@RoleIds",string.Join(",", model.SelectedRoleIds ?? new List<int>()) },
+                { "@UpdatedBy", 1 }
+            };
+
+            SqlHelper.ExecuteStoredProcedure("usp_UpdateUser", param);
+        }
+
+        public void AssignRole(int userId, int roleId)
+        {
+            var param = new Dictionary<string, object> { { "@UserId", userId }, { "@RoleId", roleId } };
+            SqlHelper.ExecuteStoredProcedure("usp_AssignRole", param);
+        }
+
+        public void DeleteUser(int userId)
+        {
+            var param = new Dictionary<string, object> { { "@UserId", userId } };
+            SqlHelper.ExecuteStoredProcedure("usp_DeleteUser", param);
+        }
+
+        public void ToggleUserStatus(int userId)
+        {
+            var param = new Dictionary<string, object> { { "@UserId", userId } };
+            SqlHelper.ExecuteStoredProcedure("usp_ToggleUserStatus", param);
+        }
+
+
+        public List<ResultModel> GetResultsData(int userId)
+        {
+            var parameter = new Dictionary<string, object>
+            {
+                { "UserId", userId },
+            };
+
+            DataTable dt = SqlHelper.ExecuteStoredProcedureSelect("usp_GetResultData", parameter);
+
+            var results = new List<ResultModel>();
+            foreach (DataRow row in dt.Rows)
+            {
+                results.Add(new ResultModel()
+                {
+                    ExamConfigId = Convert.ToInt32(row["ExamConfigId"]),
+                    ExamTitle = Convert.ToString(row["ExamTitle"]) ?? "",
+                    TotalMarks = row["TotalMarks"] != DBNull.Value ? Convert.ToInt32(row["TotalMarks"]) : 0,
+                    ObtainedMarks = row["ObtainedMarks"] != DBNull.Value ? Convert.ToInt32(row["ObtainedMarks"]) : 0,
+                    DateExamTaken = Convert.ToDateTime(row["DateExamTaken"]),
+                    Percentage = Convert.ToDecimal(row["Percentage"]),
+                    Result = Convert.ToString(row["Result"]) ?? "",
+                });
+            }
+            return results;
+        }
+
+        public UserModel GetUserDetailsById(int userId)
+        {
+            var parameter = new Dictionary<string, object>
+            {
+                { "UserId", userId },
+            };
+
+            DataTable dt = SqlHelper.ExecuteStoredProcedureSelect("usp_GetUserById", parameter);
+            var users = new UserModel();
+            foreach (DataRow row in dt.Rows)
+            {
+                users = new UserModel()
+                {
+                    UserId = Convert.ToInt32(row["UserId"]),
+                    FirstName = Convert.ToString(row["FirstName"]) ?? "",
+                    LastName = Convert.ToString(row["LastName"]) ?? "",
+                    Email = Convert.ToString(row["Email"]) ?? "",
+                    PhoneNumber = Convert.ToString(row["PhoneNumber"]) ?? "",
+                    DateOfBirth = Convert.ToDateTime(row["DateOfBirth"]),
+                    Gender = Convert.ToString(row["Gender"]),
+                    
+
+                };
+            }
+            return users;
+        }
+
+
+        public void UpdateUserProfile(UserModel user)
+        {
+            var param = new Dictionary<string, object>
+            {
+                {"@UserId", user.UserId},
+                {"@Email", user.Email},
+                {"@FirstName", user.FirstName},
+                {"@LastName", user.LastName},
+                {"@PhoneNumber", user.PhoneNumber ?? (object)DBNull.Value},
+                {"@Gender", user.Gender ?? (object)DBNull.Value},
+                {"@DateOfBirth", user.DateOfBirth ?? (object)DBNull.Value},
+                
+            };
+
+            SqlHelper.ExecuteStoredProcedure("usp_UpdateUserDetails", param);
+
+        }
     }
 }

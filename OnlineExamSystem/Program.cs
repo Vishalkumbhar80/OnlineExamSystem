@@ -1,11 +1,9 @@
 ﻿var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
-
-
-// ✅ Add Session services
-builder.Services.AddControllersWithViews();
+// Add services
+builder.Services.AddControllersWithViews()
+.AddRazorRuntimeCompilation();
+// Add IHttpContextAccessor and session support
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSession(options =>
 {
@@ -14,31 +12,26 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
+// Register SessionManager as scoped so you can inject it
+builder.Services.AddScoped<OnlineExamSystem.Common.SessionManager>();
+
 var app = builder.Build();
 
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddSession();
-
-
-
-// Configure the HTTP request pipeline.
+// Middleware pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
 
-app.UseAuthorization();
-
-
-// ✅ Activate session before mapping routes
+// session must be before authorization or components that rely on it
 app.UseSession();
+
+app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
