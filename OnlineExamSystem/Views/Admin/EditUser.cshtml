@@ -1,0 +1,81 @@
+﻿@model OnlineExamSystem.Models.UserModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = Model?.UserId == 0 ? "Create User" : "Edit User";
+    var roles = ViewBag.Roles as List<SelectListItem> ?? new List<SelectListItem>();
+    var userRoles = ViewBag.UserRoles as List<(int roleId, string roleName)> ?? new List<(int, string)>();
+    int selectedRoleId = userRoles.Any() ? userRoles.First().roleId : 0;
+}
+
+<div class="container mt-4">
+    <h2>@ViewData["Title"]</h2>
+
+    <form asp-action="EditUser" method="post">
+        <input type="hidden" asp-for="UserId" />
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="FirstName" class="form-label"></label>
+                <input asp-for="FirstName" class="form-control" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="LastName" class="form-label"></label>
+                <input asp-for="LastName" class="form-control" />
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" />
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="PhoneNumber" class="form-label"></label>
+                <input asp-for="PhoneNumber" class="form-control" />
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Gender" class="form-label"></label>
+                <input asp-for="Gender" class="form-control" />
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="DateOfBirth" class="form-label"></label>
+                <input asp-for="DateOfBirth" class="form-control" type="date" />
+            </div>
+
+
+
+
+
+
+            <div class="col-md-4">
+                <label class="form-label">Roles</label>
+                <select asp-for="SelectedRoleIds" class="form-select" multiple size="4">
+                    @foreach (var role in roles)
+                    {
+                        <option value="@role.Value" selected="@(userRoles.Any(r => r.roleId == Convert.ToInt32(role.Value)) ? "selected" : null)">
+                            @role.Text
+                        </option>
+
+
+                    }
+
+                </select>
+                <small class="text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple roles.</small>
+            </div>
+
+
+            <div class="col-12">
+                <label class="form-label">Active</label>
+                <select asp-for="IsActive" class="form-select">
+                    <option value="true" selected="@(Model?.IsActive == true ? "selected" : null)">Active</option>
+                    <option value="false" selected="@(Model?.IsActive == false ? "selected" : null)">Inactive</option>
+                </select>
+            </div>
+
+            <div class="col-12">
+                <button type="submit" class="btn btn-success">Save</button>
+                <a asp-action="ManageUsers" class="btn btn-secondary ms-2">Cancel</a>
+            </div>
+        </div>
+    </form>
+</div>

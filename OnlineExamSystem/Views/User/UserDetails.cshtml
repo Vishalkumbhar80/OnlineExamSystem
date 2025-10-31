@@ -1,0 +1,23 @@
+﻿@model OnlineExamSystem.Models.UserModel
+
+@{
+    ViewData["Title"] = "User Profile";
+}
+
+<h2>User Profile</h2>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+
+<table class="table table-bordered">
+    <tr><th>First Name</th><td>@Model.FirstName</td></tr>
+    <tr><th>Last Name</th><td>@Model.LastName</td></tr>
+    <tr><th>Email</th><td>@Model.Email</td></tr>
+    <tr><th>Phone</th><td>@Model.PhoneNumber</td></tr>
+    <tr><th>Gender</th><td>@Model.Gender</td></tr>
+    <tr><th>Date of Birth</th><td>@Model.DateOfBirth?.ToString("yyyy-MM-dd")</td></tr>
+</table>
+
+<a asp-action="EditProfile" asp-route-id="@Model.UserId" class="btn btn-primary">Edit Profile</a>

@@ -1,12 +1,31 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Reflection;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using OnlineExamSystem.Common;
 using OnlineExamSystem.DAL;
 using OnlineExamSystem.Models;
+using PdfSharpCore.Drawing;
+using PdfSharpCore.Pdf;
 
 namespace OnlineExamSystem.Controllers
 {
     public class UserController : Controller
     {
+
+        private readonly SessionManager _sessionManager;
+        // Fix for CS1061: Replace the type of `_userDal` from `object` to `UserDAL` to match the expected type.
+
+        private readonly UserDAL _userDal; // Correct type
+
+        
+        public UserController(SessionManager sessionManager)
+        {
+
+            _userDal = new UserDAL(); // Correct initialization
+            _sessionManager = sessionManager;
+        }
+
         [HttpGet]
         public IActionResult SelectExam()
         {
@@ -56,7 +75,7 @@ namespace OnlineExamSystem.Controllers
             if (examId <= 0) return BadRequest();
 
             var dal = new ExamConfigDAL();
-            var exam = dal.GetExamById(examId);
+            var exam = dal.GetExamById(examId, _sessionManager.UserId);
             if (exam == null) return NotFound();
 
             // Optional: check exam availability window
@@ -81,7 +100,7 @@ namespace OnlineExamSystem.Controllers
             if (examId <= 0) return BadRequest();
 
             var dal = new ExamConfigDAL();
-            var exam = dal.GetExamById(examId);
+            var exam = dal.GetExamById(examId, _sessionManager.UserId);
             if (exam == null) return NotFound();
 
             // Optionally re-check exam availability server-side
@@ -98,33 +117,6 @@ namespace OnlineExamSystem.Controllers
             return RedirectToAction("TakeExam", "User", new { examId = examId /*, attemptId = attemptId*/ });
         }
 
-        //[HttpGet]
-        //public IActionResult TakeExam(int examId)
-        //{
-        //    if (examId <= 0) return BadRequest();
-
-        //    var examDal = new ExamConfigDAL();
-        //    var exam = examDal.GetExamById(examId);
-        //    if (exam == null) return NotFound();
-
-        //    // Load questions and their options
-        //    var qDal = new QuestionDAL();
-        //    var questions = qDal.GetQuestionsByExamId(examId);
-        //    foreach(var que in questions)
-        //    {
-        //        que.Options = qDal.GetOptionsByQuestionId(que.Id);
-        //    }
-        //    // For each question, load options if not included by GetQuestionsByExamId
-        //    // (Assume GetQuestionsByExamId loads options; if not, call GetOptionsByQuestionId inside loop)
-        //    // Build a simple view model
-        //    var vm = new ExamTakeViewModel
-        //    {
-        //        Exam = exam,
-        //        Questions = questions
-        //    };
-
-        //    return View(vm);
-        //}
 
         public IActionResult TakeExam(int examId)
         {
@@ -134,49 +126,14 @@ namespace OnlineExamSystem.Controllers
             return View(model);
         }
 
-        // POST: /Exam/Submit
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public IActionResult Submit(int examId, string answersJson)
-        //{
-        //    if (examId <= 0) return BadRequest("Invalid exam id.");
-        //    if (string.IsNullOrWhiteSpace(answersJson)) return BadRequest("No answers submitted.");
 
-        //    try
-        //    {
-        //        // Save submission (DAL should parse JSON or accept structured objects)
-        //        var dal = new UserDAL(); // create a DAL to handle exam submissions; implement below or adapt
-        //        int userId = 0; // get from auth if you have users: e.g. int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value)
-        //        var submissionId = dal.SaveExamSubmission(examId, userId, answersJson);
-
-        //        // Optionally calculate score here or queue scoring
-        //        return Json(new { success = true, submissionId = submissionId });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // log ex
-        //        return StatusCode(500, new { success = false, message = ex.Message });
-        //    }
-        //}
-
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public IActionResult Submit(int examId, List<AnswerSubmission> answers)
-        //{
-        //    var dal = new UserDAL();
-        //    var result = dal.SaveExamSubmission(examId, 1, answers);
-        //    return RedirectToAction("Result", new { examId });
-        //}
-
-
-        private int GetCurrentUserId() => 1; // Replace with real auth logic
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Submit(int examId, List<AnswerSubmission> answers)
         {
 
-            int userId = GetCurrentUserId();
+            int userId = _sessionManager.UserId;
             var dal = new UserDAL();
             if (answers != null && answers.Count > 0)
             {
@@ -185,13 +142,172 @@ namespace OnlineExamSystem.Controllers
             }
             // Fetch result
             var examResult = dal.GetExamResult(examId, userId);
+            ViewBag.IsSubmitted = true;
+
+            // ✅ Generate certificate if passed
+            if (examResult.Result == "Pass")
+            {
+                string certPath = GenerateCertificate(examResult, userId);
+                ViewBag.CertificatePath = certPath; // Pass to ThankYou view
+            }
 
             // Pass result to ThankYou view
             return View("ThankYou", examResult);
         }
 
+        // -----------------------------------------------------------------
+        // 🔹 Certificate Generator Method
+        private string GenerateCertificate(ExamResultViewModel examResult, int userId)
+        {
+            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "certificates");
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
 
+            string fileName = $"Certificate_User{userId}_Exam{examResult.ExamTitle}.pdf";
+            string filePath = Path.Combine(folderPath, fileName);
+
+            using (PdfDocument document = new PdfDocument())
+            {
+                document.Info.Title = "Certificate of Achievement";
+                var page = document.AddPage();
+                var gfx = XGraphics.FromPdfPage(page);
+
+                // Background
+                gfx.DrawRectangle(XBrushes.White, 0, 0, page.Width, page.Height);
+
+                // Fonts
+                var titleFont = new XFont("Times New Roman", 30, XFontStyle.Bold);
+                var nameFont = new XFont("Times New Roman", 24, XFontStyle.BoldItalic);
+                var normalFont = new XFont("Times New Roman", 16, XFontStyle.Regular);
+                var smallFont = new XFont("Times New Roman", 12, XFontStyle.Italic);
+
+                // Title
+                gfx.DrawString("Certificate of Achievement", titleFont, XBrushes.DarkBlue,
+                    new XRect(0, 80, page.Width, 50), XStringFormats.TopCenter);
+
+                // Subtitle
+                gfx.DrawString("This is to certify that", normalFont, XBrushes.Black,
+                    new XRect(0, 160, page.Width, 30), XStringFormats.TopCenter);
+
+                // Candidate Name
+                gfx.DrawString($"{_sessionManager.FullName}", nameFont, XBrushes.DarkRed,
+                    new XRect(0, 200, page.Width, 40), XStringFormats.TopCenter);
+
+                // Exam info
+                gfx.DrawString($"has successfully passed the exam \"{examResult.ExamTitle}\"", normalFont, XBrushes.Black,
+                    new XRect(0, 260, page.Width, 30), XStringFormats.TopCenter);
+
+                gfx.DrawString($"Score: {examResult.ObtainedMarks} / {examResult.TotalMarks}", normalFont, XBrushes.Black,
+                    new XRect(0, 300, page.Width, 30), XStringFormats.TopCenter);
+
+                gfx.DrawString($"Passing Marks: {examResult.PassingMarks}", normalFont, XBrushes.Black,
+                    new XRect(0, 330, page.Width, 30), XStringFormats.TopCenter);
+
+                // Footer
+                gfx.DrawString("Authorized Signature", smallFont, XBrushes.Black,
+                    new XRect(50, page.Height - 100, 200, 20), XStringFormats.TopLeft);
+
+                gfx.DrawString($"Date: {DateTime.Now:dd MMM yyyy}", smallFont, XBrushes.Black,
+                    new XRect(page.Width - 250, page.Height - 100, 200, 20), XStringFormats.TopRight);
+
+                document.Save(filePath);
+            }
+
+            // Return relative path for UI download link
+            return $"/certificates/{fileName}";
+        }
+        public IActionResult ResultData()
+        {
+            var dal = new UserDAL();
+            var results = dal.GetResultsData(_sessionManager.UserId);
+
+
+            return View(results);
+        }
+        public IActionResult DownloadCertificate(int examId)
+        {
+
+            var dal = new UserDAL();
+            // Fetch result
+            var examResult = dal.GetExamResult(examId, _sessionManager.UserId);
+            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "certificates");
+            string fileName1 = $"Certificate_User{_sessionManager.UserId}_Exam{examId}.pdf";
+
+            string fileName = $"Certificate_User{_sessionManager.UserId}_Exam{examResult.ExamTitle}.pdf";
+            string filePath = Path.Combine(folderPath, fileName);
+
+            if (!System.IO.File.Exists(filePath))
+                return NotFound("Certificate not found.");
+
+            var bytes = System.IO.File.ReadAllBytes(filePath);
+            return File(bytes, "application/pdf", fileName);
+        }
+
+        public IActionResult ThankYou(int examConfigId)
+        {
+            var dal = new UserDAL();
+            ViewBag.IsSubmitted = false;
+            var examResult = dal.GetExamResult(examConfigId, _sessionManager.UserId);
+            if (examResult.Result == "Pass")
+            {
+                string certPath = GenerateCertificate(examResult, _sessionManager.UserId);
+                ViewBag.CertificatePath = certPath; // Pass to ThankYou view
+            }
+            return View(examResult);
+        }
+
+        public IActionResult EditProfile()
+        {
+            var dal = new UserDAL();
+            var user = dal.GetUserDetailsById(_sessionManager.UserId);
+            return View(user);
+        }
+         public IActionResult UserDetails()
+        {
+            var dal = new UserDAL();
+            var user = dal.GetUserDetailsById(_sessionManager.UserId);
+            return View(user);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ProfileEdit(UserModel model)
+        {
+            //if (!ModelState.IsValid)
+            //{
+            //    return View(model);
+            //}
+
+            try
+            {
+                _userDal.UpdateUserProfile(model);
+
+                _sessionManager.Data = new SessionData
+                {
+                    UserId = model.UserId,
+                    FullName = $"{model.FirstName} {model.LastName}".Trim(),
+                    Email = model.Email,
+                    LastLogin = DateTime.UtcNow
+                };
+                TempData["SuccessMessage"] = "Profile updated successfully!";
+                return RedirectToAction("UserDetails", new { id = model.UserId });
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", "An error occurred while updating the profile: " + ex.Message);
+                return View("EditProfile", model);
+            }
+        }
     }
-
 }
+
+
+
+
+
+
+    
+
+    
+
 

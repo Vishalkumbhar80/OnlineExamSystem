@@ -1,32 +1,71 @@
 ﻿@model OnlineExamSystem.Models.ExamResultViewModel
-
-<h2>Thank You for Submitting the Exam!</h2>
+@{
+	
+	bool isSubmitted = ViewBag.IsSubmitted != null && (bool)ViewBag.IsSubmitted;
+}
+@if (isSubmitted)
+{
+	<h2>Thank You for Submitting the Exam!</h2>
+}
+else
+{
+	<h2>Exam Result </h2>
+}
 
 <h3>@Model.ExamTitle</h3>
 
 <p><strong>Total Marks:</strong> @Model.TotalMarks</p>
+<p><strong>Passing Marks:</strong> @Model.PassingMarks</p>
 <p><strong>Obtained Marks:</strong> @Model.ObtainedMarks</p>
 <p><strong>Result:</strong> @Model.Result</p>
 
+@if (ViewBag.CertificatePath != null)
+{
+	<div class="mt-4">
+		<a href="@ViewBag.CertificatePath" target="_blank" class="btn btn-success">
+			<i class="bi bi-download"></i> Download Certificate
+		</a>
+
+		@* <a href="@Url.Action("DownloadCertificate", "User", new { examId = Model.ExamConfigId })" target="_blank" class="btn btn-success">
+			<i class="bi bi-download"></i>  Download Certificate
+		</a> *@
+
+
+	</div>
+}
+else
+{
+	<div class="mt-4 text-danger">
+		No certificate generated (exam not passed).
+	</div>
+}
+
 <table class="table">
-    <thead>
-        <tr>
-            <th>Question</th>
-            <th>Your Answer</th>
-            <th>Correct Answer</th>
-            <th>Marks</th>
-            
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var q in Model.Questions)
-        {
-            <tr>
-                <td>@q.QuestionText</td>
-                <td>@q.SelectedOption</td>
-                <td>@q.CorrectOption</td>
-                <td>@q.Marks</td>
-            </tr>
-        }
-    </tbody>
+	<thead>
+		<tr>
+			<th>Question</th>
+			<th>Your Answer</th>
+			<th>Correct Answer</th>
+			<th>Question Status</th>
+			<th>Max Marks</th>
+
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var q in Model.Questions)
+		{
+			<tr>
+				<td>@q.QuestionText</td>
+				<td>@q.SelectedOption</td>
+				<td>@q.CorrectOption</td>
+				<td style="@((q.IsCorrect)
+                    ? "background-color: #d4edda; color: #155724; border-radius: 6px; text-align: center;"
+                    : "background-color: #f8d7da; color: #721c24; border-radius: 6px; text-align: center;")">
+					@q.QuestionStatus
+				</td>
+				<td>@q.Marks</td>
+			</tr>
+		}
+	</tbody>
 </table>
+

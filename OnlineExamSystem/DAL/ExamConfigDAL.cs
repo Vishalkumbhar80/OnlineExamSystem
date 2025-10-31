@@ -58,9 +58,9 @@ namespace OnlineExamSystem.DAL
             return list;
         }
 
-        public ExamConfig GetExamById(int id)
+        public ExamConfig GetExamById(int id, int userId)
         {
-            var parameters = new Dictionary<string, object> { { "@Id", id } };
+            var parameters = new Dictionary<string, object> { { "@Id", id }, {"@UserId", userId } };
             DataTable dt = SqlHelper.ExecuteStoredProcedureSelect("usp_GetExamById", parameters);
 
             if (dt.Rows.Count == 0) return null;
@@ -79,7 +79,8 @@ namespace OnlineExamSystem.DAL
                 IsNegativeMarking = Convert.ToBoolean(row["IsNegativeMarking"]),
                 Instructions = row["Instructions"].ToString(),
                 CreatedAt = Convert.ToDateTime(row["CreatedAt"]),
-                CreatedBy = row["CreatedBy"] as int?
+                CreatedBy = row["CreatedBy"] as int ?,
+                IsExamAttempt = Convert.ToBoolean(row["IsExamAttempt"]),
             };
         }
 

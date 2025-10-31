@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using OnlineExamSystem.Common;
 using OnlineExamSystem.DAL;
 using OnlineExamSystem.Models;
 
@@ -10,15 +11,18 @@ namespace OnlineExamSystem.Controllers
         private readonly ILogger<HomeController> _logger;
         private readonly ExamConfigDAL _repository;
         private object repository;
-     
+        private readonly SessionManager _session;
 
 
 
 
-        public HomeController(ILogger<HomeController> logger)
+
+        public HomeController(ILogger<HomeController> logger, SessionManager session)
         {
             _logger = logger;
             _repository = new ExamConfigDAL(); // ✅ Initialize repository
+
+            _session = session;
         }
 
         public IActionResult Index()
@@ -75,7 +79,7 @@ namespace OnlineExamSystem.Controllers
 
         public IActionResult EditExam(int id)
         {
-            ExamConfig exam = _repository.GetExamById(id); // ✅ Works now
+            ExamConfig exam = _repository.GetExamById(id, _session.UserId); // ✅ Works now
             if (exam == null)
                 return NotFound();
 

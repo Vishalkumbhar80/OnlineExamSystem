@@ -1,0 +1,34 @@
+﻿@model List<OnlineExamSystem.Models.ResultModel>
+
+	<h2>My Results </h2>
+
+<table class="table table-bordered table-striped">
+	<thead>
+		<tr>
+			<th>Exam Title</th>
+			<th>Total Marks</th>
+			<th>Obtained Marks</th>
+			<th>Exam Date</th>
+			<th>Percentage</th>
+			<th>Result</th>
+			<th>Action</th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var data in Model)
+		{
+			<tr>
+				<td>@data.ExamTitle</td>
+				<td>@data.TotalMarks</td>
+				<td>@data.ObtainedMarks</td>
+				<td>@data.DateExamTaken</td>
+				<td>@data.Percentage</td>
+				<td>@data.Result</td>
+				<td>
+					<a asp-action="ThankYou" asp-route-examConfigId="@data.ExamConfigId" class="btn btn-sm btn-warning">View Details</a>
+
+				</td>
+			</tr>
+		}
+	</tbody>
+</table>

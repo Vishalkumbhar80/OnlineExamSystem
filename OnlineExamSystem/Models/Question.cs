@@ -49,16 +49,33 @@ namespace OnlineExamSystem.Models
         public string CorrectOption { get; set; }
         public decimal Marks { get; set; }
         public bool IsCorrect { get; set; }
+        public string QuestionStatus { get; set; }
+
     }
 
     public class ExamResultViewModel
     {
+        public int ExamConfigId { get; set; }
         public string ExamTitle { get; set; }
         public decimal TotalMarks { get; set; }
         public decimal ObtainedMarks { get; set; }
 
         public string Result { get; set; }
         public List<ExamResultQuestion> Questions { get; set; } = new List<ExamResultQuestion>();
+        public int PassingMarks { get; internal set; }
+    }
+
+    public class ResultModel
+    {
+        public int ExamConfigId { get; set; }
+        public string ExamTitle { get; set; }
+        public int TotalMarks { get; set; }
+        public int ObtainedMarks { get; set; }
+        public DateTime DateExamTaken { get; set; }
+        public decimal Percentage { get; set; }
+        public string Result { get; set; }
+
+        public string IsCorrect { get; set; }
     }
 
     public class UserModel
@@ -74,7 +91,7 @@ namespace OnlineExamSystem.Models
         public string Email { get; set; }
 
         [DataType(DataType.Date)]
-        public DateTime DateOfBirth { get; set; }
+        public DateTime? DateOfBirth { get; set; }
 
         public List<SelectListItem> GenderList { get; set; } = new List<SelectListItem>();
 
@@ -89,7 +106,12 @@ namespace OnlineExamSystem.Models
 
         [Required]
         [DataType(DataType.Password)]
-        public string Password { get; set; }
+        public string Password { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
+        public List<RoleModel> RoleList { get; set; } = new List<RoleModel>();
+        public bool IsActive { get; set; }
+
+        public List<int> SelectedRoleIds { get; set; } = new List<int>();
     }
 
     public class LoginModel

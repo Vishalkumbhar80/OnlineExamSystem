@@ -50,11 +50,19 @@
         }
         else
         {
+            if (Model.IsExamAttempt)
+            {
+                <div class="alert alert-info">You have already attempted this exam.</div>
+            }
+            else
+			{
+			
             <form asp-action="StartExam" method="post" class="d-inline">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="examId" value="@Model.Id" />
                 <button type="submit" class="btn btn-success btn-lg">Take Exam</button>
             </form>
+            }
         }
 
         <a asp-action="SelectExam" asp-controller="User" class="btn btn-secondary ms-2">Back</a>

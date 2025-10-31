@@ -1,8 +1,179 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@using Newtonsoft.Json
+@using OnlineExamSystem.Common
+@inject SessionManager SessionManager
+@{
+    ViewData["Title"] = "Dashboard";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+
+
+@{
+    // Get session info
+    var session = SessionManager.Data;
+    var firstName = session?.FullName ?? session?.UserName ?? string.Empty;
+    var role = session?.Role ?? "Guest";
+    dynamic? user = null;
+    string userRole = session.Role;
+    string userName = session.FullName;
+
+    
+
+    bool isGuest = string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(userRole);
+}
+
+<style>
+    body {
+        background: linear-gradient(135deg, #e8f0ff, #ffffff);
+        min-height: 100vh;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .dashboard-header {
+        background-color: #007bff;
+        color: white;
+        padding: 1.5rem 2rem;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+        .dashboard-header h1 {
+            font-weight: 700;
+        }
+
+    .card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: transform 0.2s ease-in-out;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+    .card-header {
+        font-weight: 600;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .icon {
+        font-size: 40px;
+    }
+
+    .admin-section h3 {
+        color: #007bff;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .welcome-box {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        padding: 3rem;
+        text-align: center;
+        margin-top: 4rem;
+    }
+</style>
+
+<div class="container-fluid">
+    @if (isGuest)
+    {
+        <!-- GUEST VIEW -->
+        <div class="welcome-box">
+            <h1 class="text-primary mb-3">🎓 Welcome to Online Exam System</h1>
+            <p class="fs-5 mb-4">
+                Take exams, track your performance, and enhance your learning experience.
+            </p>
+            <a asp-controller="Login" asp-action="UserLogin" class="btn btn-primary btn-lg me-2">Login</a>
+            <a asp-controller="Login" asp-action="UserRagister" class="btn btn-outline-primary btn-lg">Register</a>
+        </div>
+    }
+    else
+    {
+        <!-- LOGGED-IN VIEW -->
+        <div class="dashboard-header d-flex justify-content-between align-items-center">
+            <h1>🎓 Welcome, @userName!</h1>
+            <span class="fs-5">Role: <strong>@userRole</strong></span>
+        </div>
+
+        <!-- Common Cards -->
+        <div class="row g-4 mt-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-header bg-primary text-white">Upcoming Exams</div>
+                    <div class="card-body">
+                        <div class="icon mb-2">📘</div>
+                        <p class="card-text">Check your upcoming exams and schedules.</p>
+                        <a asp-controller="User" asp-action="SelectExam" class="btn btn-primary">View Exams</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-header bg-success text-white">Results</div>
+                    <div class="card-body">
+                        <div class="icon mb-2">📊</div>
+                        <p class="card-text">View your latest exam results and progress.</p>
+                        <a asp-controller="User" asp-action="ResultData" class="btn btn-success">View Results</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-header bg-info text-white">Profile</div>
+                    <div class="card-body">
+                        <div class="icon mb-2">👤</div>
+                        <p class="card-text">Manage your personal information.</p>
+                        <a asp-controller="User" asp-action="UserDetails" class="btn btn-info">View Profile</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN EXCLUSIVE SECTION -->
+        @if (userRole == "Admin")
+        {
+            <div class="mt-5">
+                <h3 class="text-primary mb-3">🛠 Admin Tools</h3>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-header bg-danger text-white">Manage Users</div>
+                            <div class="card-body">
+                                <div class="icon mb-2">👥</div>
+                                <p class="card-text">View, edit, and manage registered users.</p>
+                                <a asp-controller="Admin" asp-action="ManageUsers" class="btn btn-danger">Open</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-header bg-warning text-dark">Manage Exams</div>
+                            <div class="card-body">
+                                <div class="icon mb-2">📝</div>
+                                <p class="card-text">Create, edit, and schedule exams.</p>
+                                <a asp-controller="Question" asp-action="ConfigQuestion" class="btn btn-warning">Open</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-header bg-secondary text-white">Reports</div>
+                            <div class="card-body">
+                                <div class="icon mb-2">📈</div>
+                                <p class="card-text">View overall statistics and reports.</p>
+                                <a asp-controller="Admin" asp-action="Reports" class="btn btn-secondary">View Reports</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
 </div>

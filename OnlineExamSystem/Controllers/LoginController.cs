@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
+using OnlineExamSystem.Common;
 using OnlineExamSystem.DAL;
 using OnlineExamSystem.Models;
 
@@ -10,7 +11,13 @@ namespace OnlineExamSystem.Controllers
     public class LoginController : Controller
     {
 
+        private readonly LoginDAL _loginDal = new LoginDAL();
+        private readonly SessionManager _sessionManager;
 
+        public LoginController(SessionManager sessionManager)
+        {
+            _sessionManager = sessionManager;
+        }
 
 
         public IActionResult UserRagister()
@@ -54,7 +61,7 @@ namespace OnlineExamSystem.Controllers
                 }
 
                 ViewBag.ExamTypes = Enum.GetValues(typeof(ExamType)).Cast<ExamType>();
-                return View(model);
+                return View("UserRagister",model);
             }
 
             LoginDAL login1 = new LoginDAL();
@@ -62,7 +69,7 @@ namespace OnlineExamSystem.Controllers
 
 
 
-            return View("Login");
+            return View("UserLogin");
         }
 
         public IActionResult UserLogin()
@@ -76,6 +83,20 @@ namespace OnlineExamSystem.Controllers
             var user = loginDAL.GetUserLogin(model);
             if (user != null)
             {
+
+                // map to SessionData and store
+
+                user.RoleList = loginDAL.GetUserRole(user.UserId);
+
+                _sessionManager.Data = new SessionData
+                {
+                    UserId = user.UserId,
+                    FullName = $"{user.FirstName} {user.LastName}".Trim(),
+                    Email = user.Email,
+                    LastLogin = DateTime.UtcNow,
+                    UserRoles = user.RoleList
+                };
+
                 // Successful login
                 // You can set session or authentication cookie here
 
@@ -83,8 +104,21 @@ namespace OnlineExamSystem.Controllers
                 // Save complex object (like your user model) to session using JSON serialization
                 HttpContext.Session.SetString("UserDetails", JsonConvert.SerializeObject(user));
 
-                TempData["LoginSuccess"] = "Login successful! Welcome back.";
-                return RedirectToAction("SelectExam", "User");
+
+                if(user.RoleList != null)
+                {
+                    // Set default role in session (e.g., first role)
+                    _sessionManager.Role = user.RoleList.First().RoleName;
+                    HttpContext.Session.SetString("UserRole", user.RoleList.First().RoleName);
+                }
+                else
+                {
+                    _sessionManager.Role = "User";
+                    HttpContext.Session.SetString("UserRole", "User"); // default role
+                }
+
+                    //TempData["LoginSuccess"] = "Login successful! Welcome back.";
+                return RedirectToAction("Index", "Home");
             }
             else
             {
@@ -101,6 +135,34 @@ namespace OnlineExamSystem.Controllers
             //    // now you can use user.FirstName, user.Email, etc.
             //}
 
+        }
+
+        public IActionResult SwitchRole(string role)
+        {
+            if (!string.IsNullOrEmpty(role))
+            {
+                // Store the selected role in session
+                _sessionManager.Role = role;
+                //HttpContext.Session.SetString("UserRole", role);
+            }
+
+            // Redirect back to home (or wherever you want)
+            return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet]
+        public IActionResult Logout()
+        {
+            // Clear all session data
+            HttpContext.Session.Clear();
+
+            // Optionally clear authentication cookie if you use it
+            // await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            TempData["LogoutMessage"] = "You have been successfully logged out.";
+
+            // Redirect to login page
+            return RedirectToAction("UserLogin", "Login");
         }
     }
 }

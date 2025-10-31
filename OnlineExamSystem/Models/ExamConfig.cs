@@ -65,5 +65,6 @@ namespace OnlineExamSystem.Models
         public string Instructions { get; set; }
         public DateTime CreatedAt { get; internal set; }
         public int? CreatedBy { get; internal set; }
+        public bool IsExamAttempt { get; internal set; }
     }
 }
